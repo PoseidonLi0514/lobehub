@@ -1,9 +1,8 @@
 import type { EvalDatasetRecordRefFile } from '@lobechat/types';
 import { and, eq, inArray } from 'drizzle-orm';
 
-import type { NewEvalDatasetRecordsItem } from '../../../schemas';
-import { evalDatasetRecords, files } from '../../../schemas';
-import type { LobeChatDatabase } from '../../../type';
+import { NewEvalDatasetRecordsItem, evalDatasetRecords, files } from '../../schemas';
+import { LobeChatDatabase } from '../../type';
 
 export class EvalDatasetRecordModel {
   private userId: string;

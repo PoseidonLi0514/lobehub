@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm';
 
-import { NewEvaluationRecordsItem, evaluationRecords } from '../../../schemas';
-import { LobeChatDatabase } from '../../../type';
+import { NewEvaluationRecordsItem, evaluationRecords } from '../../schemas';
+import { LobeChatDatabase } from '../../type';
 
 export class EvaluationRecordModel {
   private userId: string;
