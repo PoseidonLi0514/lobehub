@@ -34,6 +34,11 @@ export interface EvalRunConfig {
   [key: string]: unknown;
   judgeModel?: string;
   judgeProvider?: string;
+  /**
+   * Number of times to execute each test case (for pass@K, pass^K metrics)
+   * @default 1
+   */
+  k?: number;
   maxConcurrency?: number;
   timeout?: number;
 }

@@ -13,6 +13,7 @@ import {
 import { authedProcedure, router } from '@/libs/trpc/lambda';
 import { serverDatabase } from '@/libs/trpc/lambda/middleware';
 import { FileService } from '@/server/services/file';
+import { AgentEvalRunWorkflow } from '@/server/workflows/agentEvalRun';
 
 const agentEvalProcedure = authedProcedure.use(serverDatabase).use(async (opts) => {
   const { ctx } = opts;
@@ -541,5 +542,193 @@ export const agentEvalRouter = router({
           error: error instanceof Error ? error.message : 'Failed to delete run',
         };
       }
+    }),
+
+  // ============================================
+  // Run Execution Operations
+  // ============================================
+
+  /**
+   * Start executing a run
+   * Transitions: idle/failed → pending → running
+   */
+  startRun: agentEvalProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        force: z.boolean().default(false).optional(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const { id: runId, force } = input;
+
+      // Get run to validate ownership and status
+      const run = await ctx.runModel.findById(runId);
+      if (!run) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Run not found' });
+      }
+
+      // Check run status
+      if (run.status === 'running' && !force) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Run is already running. Use force=true to restart.',
+        });
+      }
+
+      // Trigger workflow
+      await AgentEvalRunWorkflow.triggerRunBenchmark({ runId, force });
+
+      return { success: true, runId };
+    }),
+
+  /**
+   * Abort a running evaluation
+   */
+  abortRun: agentEvalProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      const run = await ctx.runModel.findById(input.id);
+      if (!run) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Run not found' });
+      }
+
+      if (run.status !== 'running' && run.status !== 'pending') {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Cannot abort run with status: ${run.status}`,
+        });
+      }
+
+      // Update status to aborted
+      await ctx.runModel.update(input.id, { status: 'aborted' });
+
+      return { success: true };
+    }),
+
+  // /**
+  //  * Retry a failed run
+  //  */
+  // retryRun: agentEvalProcedure
+  //   .input(
+  //     z.object({
+  //       id: z.string(),
+  //       retryFailedOnly: z.boolean().default(true).optional(),
+  //     }),
+  //   )
+  //   .mutation(async ({ input, ctx }) => {
+  //     // TODO: Implement retry logic
+  //     throw new TRPCError({
+  //       code: 'NOT_IMPLEMENTED',
+  //       message: 'Run retry not implemented yet',
+  //     });
+  //   }),
+
+  /**
+   * Get real-time progress of a running evaluation
+   */
+  getRunProgress: agentEvalProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ input, ctx }) => {
+      const run = await ctx.runModel.findById(input.id);
+      if (!run) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Run not found' });
+      }
+
+      return {
+        status: run.status,
+        metrics: run.metrics,
+        startedAt: run.createdAt,
+        updatedAt: run.updatedAt,
+      };
+    }),
+
+  /**
+   * Get detailed results of test case executions
+   */
+  getRunResults: agentEvalProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        status: z.enum(['passed', 'failed', 'all']).default('all').optional(),
+        limit: z.number().min(1).max(100).default(50).optional(),
+        offset: z.number().min(0).default(0).optional(),
+      }),
+    )
+    .query(async ({ input, ctx }) => {
+      const run = await ctx.runModel.findById(input.id);
+      if (!run) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Run not found' });
+      }
+
+      // Get all run topics with test cases and topics
+      const runTopics = await ctx.runTopicModel.findByRunId(input.id);
+
+      // TODO: Implement filtering by status (passed/failed) once we have evaluation results
+      // TODO: Implement pagination with limit/offset
+
+      return {
+        runId: input.id,
+        total: runTopics.length,
+        results: runTopics.map((rt) => ({
+          testCaseId: rt.testCaseId,
+          topicId: rt.topicId,
+          testCase: rt.testCase,
+          topic: rt.topic,
+          // TODO: Add evaluation result and score once LOBE-4926 is implemented
+        })),
+      };
+    }),
+
+  /**
+   * Update run status (internal use)
+   */
+  updateRunStatus: agentEvalProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        status: z.enum(['idle', 'pending', 'running', 'completed', 'failed', 'aborted']),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const { id, status } = input;
+
+      const run = await ctx.runModel.findById(id);
+      if (!run) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Run not found' });
+      }
+
+      const result = await ctx.runModel.update(id, { status });
+      return result;
+    }),
+
+  /**
+   * Update run metrics (internal use)
+   */
+  updateRunMetrics: agentEvalProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        metrics: z.object({
+          totalCases: z.number(),
+          passedCases: z.number(),
+          failedCases: z.number(),
+          averageScore: z.number(),
+          passRate: z.number(),
+          duration: z.number().optional(),
+          rubricScores: z.record(z.number()).optional(),
+        }),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const { id, metrics } = input;
+
+      const run = await ctx.runModel.findById(id);
+      if (!run) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Run not found' });
+      }
+
+      const result = await ctx.runModel.update(id, { metrics });
+      return result;
     }),
 });
