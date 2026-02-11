@@ -40,7 +40,7 @@ export const agentEvalRouter = router({
         identifier: z.string(),
         name: z.string(),
         description: z.string().optional(),
-        rubrics: z.array(z.any()), // EvalBenchmarkRubric[]
+        rubrics: z.array(z.any()).optional().default([]), // EvalBenchmarkRubric[]
         passThreshold: z.number().min(0).max(1).default(0.6),
         referenceUrl: z.string().optional(),
         metadata: z.record(z.unknown()).optional(),

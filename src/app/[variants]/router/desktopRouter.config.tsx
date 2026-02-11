@@ -379,6 +379,59 @@ export const desktopRoutes: RouteConfig[] = [
 
       ...BusinessDesktopRoutesWithMainLayout,
 
+      // Eval routes
+      {
+        children: [
+          {
+            element: dynamicElement(
+              () => import('../(main)/eval'),
+              'Desktop > Eval > Overview',
+            ),
+            index: true,
+          },
+          {
+            children: [
+              {
+                element: dynamicElement(
+                  () => import('../(main)/eval/bench/[benchmarkId]'),
+                  'Desktop > Eval > Benchmark Detail',
+                ),
+                index: true,
+              },
+              {
+                children: [
+                  {
+                    element: dynamicElement(
+                      () => import('../(main)/eval/bench/[benchmarkId]/runs/[runId]'),
+                      'Desktop > Eval > Run Detail',
+                    ),
+                    index: true,
+                  },
+                  {
+                    element: dynamicElement(
+                      () =>
+                        import(
+                          '../(main)/eval/bench/[benchmarkId]/runs/[runId]/cases/[caseId]'
+                        ),
+                      'Desktop > Eval > Case Detail',
+                    ),
+                    path: 'cases/:caseId',
+                  },
+                ],
+                path: 'runs/:runId',
+              },
+            ],
+            path: 'bench/:benchmarkId',
+          },
+        ],
+        element: dynamicElement(
+          () => import('../(main)/eval/_layout'),
+          'Desktop > Eval > Layout',
+        ),
+        errorElement: <ErrorBoundary resetPath="/eval" />,
+        path: 'eval',
+      },
+
       // Pages routes
       {
         children: [

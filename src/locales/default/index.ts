@@ -9,6 +9,7 @@ import components from './components';
 import desktopOnboarding from './desktop-onboarding';
 import discover from './discover';
 import editor from './editor';
+import eval_ from './eval';
 import electron from './electron';
 import error from './error';
 import file from './file';
@@ -51,6 +52,7 @@ const resources = {
   'desktop-onboarding': desktopOnboarding,
   discover,
   editor,
+  eval: eval_,
   electron,
   error,
   file,

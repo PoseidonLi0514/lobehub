@@ -24,6 +24,7 @@ import LabsModal from '@/components/LabsModal';
 import { DOCUMENTS_REFER_URL, GITHUB, mailTo } from '@/const/url';
 import ThemeButton from '@/features/User/UserPanel/ThemeButton';
 import { useFeedbackModal } from '@/hooks/useFeedbackModal';
+import BusinessFooterExtra from '@/business/client/features/Footer/BusinessFooterExtra';
 import { useGlobalStore } from '@/store/global';
 import { systemStatusSelectors } from '@/store/global/selectors/systemStatus';
 import { featureFlagsSelectors, useServerConfigStore } from '@/store/serverConfig';
@@ -202,6 +203,7 @@ const Footer = memo(() => {
               <ActionIcon icon={Github} size={16} title={'GitHub'} />
             </a>
           )}
+          <BusinessFooterExtra />
         </Flexbox>
         <ThemeButton placement={'topCenter'} size={16} />
       </Flexbox>
