@@ -186,10 +186,10 @@ export const resolveAgentConfig = (ctx: AgentConfigResolverContext): ResolvedAge
       ctx.groupId,
       group
         ? {
-          groupId: group.id,
-          supervisorAgentId: group.supervisorAgentId,
-          title: group.title,
-        }
+            groupId: group.id,
+            supervisorAgentId: group.supervisorAgentId,
+            title: group.title,
+          }
         : null,
       agentId,
     );
@@ -292,11 +292,11 @@ export const resolveAgentConfig = (ctx: AgentConfigResolverContext): ResolvedAge
       ctx.groupId,
       group
         ? {
-          agentsCount: group.agents?.length,
-          groupId: group.id,
-          supervisorAgentId: group.supervisorAgentId,
-          title: group.title,
-        }
+            agentsCount: group.agents?.length,
+            groupId: group.id,
+            supervisorAgentId: group.supervisorAgentId,
+            title: group.title,
+          }
         : null,
     );
 
@@ -337,7 +337,13 @@ export const resolveAgentConfig = (ctx: AgentConfigResolverContext): ResolvedAge
   });
 
   // Merge runtime systemRole into agent config
-  let resolvedSystemRole = runtimeConfig?.systemRole ?? agentConfig.systemRole;
+  // For inbox agent: user-edited systemRole takes priority, builtin template as fallback
+  // For other builtin agents (group-supervisor, agent-builder, etc.): runtime systemRole is
+  // the core instruction and should not be overridden by user profile systemRole
+  let resolvedSystemRole =
+    slug === BUILTIN_AGENT_SLUGS.inbox
+      ? agentConfig.systemRole || runtimeConfig?.systemRole || ''
+      : (runtimeConfig?.systemRole ?? agentConfig.systemRole);
 
   // Merge plugins: runtime plugins take priority, fallback to base plugins
   let finalPlugins =
