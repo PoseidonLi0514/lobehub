@@ -43,9 +43,9 @@ jobs:
         with:
           images: ${{ env.REGISTRY_IMAGE }}
           tags: |
-            type=semver,pattern={{version}}
-            type=raw,value=latest,enable=${{ github.event_name == 'workflow_dispatch' || !github.event.release.prerelease }}
-            type=raw,value=${{ github.event.release.tag_name }},enable=${{ github.event.release.prerelease }}
+            type=semver,pattern={{version}},enable=${{ github.event_name == 'release' }}
+            type=raw,value=latest,enable=${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'release' && github.event.release.prerelease == false) }}
+            type=raw,value=${{ github.event.release.tag_name }},enable=${{ github.event_name == 'release' && github.event.release.prerelease == true }}
             type=sha,enable=${{ github.event_name == 'workflow_dispatch' }}
 
       - name: Docker login
@@ -110,9 +110,9 @@ jobs:
         with:
           images: ${{ env.REGISTRY_IMAGE }}
           tags: |
-            type=semver,pattern={{version}}
-            type=raw,value=latest,enable=${{ github.event_name == 'workflow_dispatch' || !github.event.release.prerelease }}
-            type=raw,value=${{ github.event.release.tag_name }},enable=${{ github.event.release.prerelease }}
+            type=semver,pattern={{version}},enable=${{ github.event_name == 'release' }}
+            type=raw,value=latest,enable=${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'release' && github.event.release.prerelease == false) }}
+            type=raw,value=${{ github.event.release.tag_name }},enable=${{ github.event_name == 'release' && github.event.release.prerelease == true }}
             type=sha,enable=${{ github.event_name == 'workflow_dispatch' }}
 
       - name: Docker login
